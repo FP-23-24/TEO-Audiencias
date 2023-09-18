@@ -1,5 +1,5 @@
 # Ejercicio: Análisis de audiencias televisivas
-**Autor**: José A. Troyano.   **Revisores**: Mariano González, Carlos G. Vallejo, José C. Riquelme, Beatriz Pontes, Toñi Reina.   **Última modificación:** 26/09/2022
+**Autor**: José A. Troyano.   **Revisores**: Mariano González, Carlos G. Vallejo, José C. Riquelme, Beatriz Pontes, Toñi Reina.   **Última modificación:** 18/09/2023
 
 En este notebook se proporcionan soluciones a la mayoría de las funciones propuestas. 
 
@@ -29,15 +29,21 @@ Una vez tenemos los datos cargados y con los tipos adecuados, tendremos que oper
 
 ### Funciones de visualización.
 
-Una vez que hemos hecho las operaciones o cálculos, las funciones de este grupo se encargan de mostrar los resultados, que podrán ser textuales o gráficos. Para mostrar los resultados usaremos tanto módulos de la librería estándar, como paquetes externos, como por ejemplo <code>matplotlib</code> para la generación de gráficas. 
-
-Estas son las correspondientes instrucciones de importación:
+Una vez que hemos hecho las operaciones o cálculos, las funciones de este grupo se encargan de mostrar los resultados, que podrán ser textuales o gráficos. Para mostrar los resultados usaremos tanto módulos de la librería estándar, como paquetes externos, como por ejemplo <code>matplotlib</code> para la generación de gráficas. Estas son las correspondientes instrucciones de importación:
 
 
 ```python
 import csv
 import statistics
 from matplotlib import pyplot as plt
+from collections import namedtuple
+```
+
+## 0. Definición de una namedtuple
+Para que el código sea más legible, vamos a definir un nuevo tipo llamado `Audiencias`. Este nuevo tipo se define en base a una tupla de dos campos. Al primer cambo de la tupla se le dará el nombre `edicion` y al segundo el nombre `share`. La definición del nuevo tipo se realiza mediante la siguiente sentencia.
+
+```python
+Audiencia = namedtuple ("Audiencia", "edicion share")
 ```
 
 ## 1. Carga de datos
@@ -62,13 +68,11 @@ No hay información de fecha, pero las líneas del fichero mantienen el orden cr
     1,0.58
 </pre>
 
-La primera función que implementaremos será la de lectura. Será la encargada de leer los datos del fichero de entrada y cargarlos en una estructura en memoria. La estructura más apropiada para los datos será una _lista de tuplas_. Una lista porque tenemos como entrada una secuencia de audiencias, y _de tuplas_ porque cada audiencia tiene dos informaciones (edición y _share_).
-
-Las siguientes celdas contienen la implementación y el test, respectivamente, de la función de lectura:
+La primera función que implementaremos será la de lectura. Será la encargada de leer los datos del fichero de entrada y cargarlos en una estructura en memoria. La estructura más apropiada para los datos será una _lista de tuplas de tipo Audiencias_. Una lista porque tenemos como entrada una secuencia de audiencias, y _de tuplas_ porque cada audiencia tiene dos informaciones (edición y _share_), que se corresponden con los dos campos que hemos definido en el tipo _Audiencias_. Las siguientes celdas contienen la implementación y el test, respectivamente, de la función de lectura:
 
 
 ```python
-def lee_audiencias(fichero):
+def lee_Audiencia(fichero):
     ''' Lee el fichero de entrada y devuelve una lista de audiencias
     
     ENTRADA: 
@@ -76,7 +80,7 @@ def lee_audiencias(fichero):
        @type fichero:  str
     SALIDA: 
        @return: lista de audiencias
-       @rtype: [(int, float)] 
+       @rtype: [Audiencia(int, float)] 
 
     Cada línea del fichero se corresponde con la audiencia de un programa,
     y se representa con una tupla con los siguientes valores:
@@ -85,45 +89,40 @@ def lee_audiencias(fichero):
     Hay que transformar la entrada (cadenas de caracteres) en valores numéricos
     para que puedan ser procesados posteriormente.
     '''
-    audiencias = []
+    audiencias=[]
     with open(fichero, encoding='utf-8') as f:
-        for linea in f:
-            # Separamos la línea en dos usando ',' como delimitador
-            edicion, share = linea.split(',')
-            # Transformamos los valores str a int y float
+        # Se crea un objeto lector (un iterator) que separará los valores por comas 
+        lector = csv.reader(f)
+        for edicion, share in lector:
             edicion = int(edicion)
             share = float(share)
-            # Creamos una tupla
-            tupla = (edicion, share)
-            # Añadimos la tupla a la lista
-            audiencias.append(tupla)
+            audiencias.append(Audiencia(edicion, share))
     return audiencias
 ```
 
 
 ```python
 # Test de la función lee_audiencias
-audiencias_gh = lee_audiencias('./data/GH.csv')
+audiencias_gh = lee_Audiencia('./data/GH.csv')
 print("Audiencias del programa Gran Hermano:")
 print(audiencias_gh[:20])
 
-audiencias_masterchef = lee_audiencias('./data/MasterChef.csv')
+audiencias_masterchef = lee_Audiencia('./data/MasterChef.csv')
 print("\nAudiencias del programa MasterChef:")
 print(audiencias_masterchef[:20])
 ```
 
     Audiencias del programa Gran Hermano:
-    [(1, 0.37), (1, 0.33), (1, 0.47), (1, 0.46), (1, 0.54), (1, 0.43), (1, 0.59), (1, 0.58), (1, 0.57), (1, 0.49), (1, 0.48), (1, 0.54), (1, 0.55), (1, 0.52), (1, 0.56), (1, 0.71), (2, 0.36), (2, 0.32), (2, 0.37), (2, 0.41)]
+    [Audiencia(1, 0.37), Audiencia(1, 0.33), Audiencia(1, 0.47), Audiencia(1, 0.46), Audiencia(1, 0.54), Audiencia(1, 0.43), Audiencia(1, 0.59), Audiencia(1, 0.58), Audiencia(1, 0.57), Audiencia(1, 0.49), Audiencia(1, 0.48), Audiencia(1, 0.54), Audiencia(1, 0.55), Audiencia(1, 0.52), Audiencia(1, 0.56), Audiencia(1, 0.71), Audiencia(2, 0.36), Audiencia(2, 0.32), Audiencia(2, 0.37), Audiencia(2, 0.41)]
     
     Audiencias del programa MasterChef:
-    [(1, 0.11), (1, 0.1), (1, 0.155), (1, 0.186), (1, 0.155), (1, 0.153), (1, 0.177), (1, 0.189), (1, 0.195), (1, 0.216), (1, 0.2), (1, 0.224), (1, 0.331), (2, 0.165), (2, 0.163), (2, 0.164), (2, 0.178), (2, 0.133), (2, 0.176), (2, 0.187)]
+    [Audiencia(1, 0.11), Audiencia(1, 0.1), Audiencia(1, 0.155), Audiencia(1, 0.186), Audiencia(1, 0.155), Audiencia(1, 0.153), Audiencia(1, 0.177), Audiencia(1, 0.189), Audiencia(1, 0.195), Audiencia(1, 0.216), Audiencia(1, 0.2), Audiencia(1, 0.224), Audiencia(1, 0.331), Audiencia(2, 0.165), Audiencia(2, 0.163), Audiencia(2, 0.164), Audiencia(2, 0.178), Audiencia(2, 0.133), Audiencia(2, 0.176), Audiencia(2, 0.187)]
     
 
 En la siguiente celda hay otra implementación, bastante más simple, de la función <code>lee_audiencias</code> que hace uso del módulo <code>csv</code> de la librería estándar de Python y de las listas por comprensión: 
 
 
 ```python
-def lee_audiencias(fichero):
     ''' Lee el fichero de entrada y devuelve una lista de audiencias
     
     ENTRADA: 
@@ -131,7 +130,7 @@ def lee_audiencias(fichero):
        @type fichero:  str
     SALIDA: 
        @return: lista de audiencias
-       @rtype: [(int, float)] 
+       @rtype: [Audiencia(int, float)] 
 
     Cada línea del fichero se corresponde con la audiencia de un programa,
     y se representa con una tupla con los siguientes valores:
@@ -139,12 +138,13 @@ def lee_audiencias(fichero):
         - audiencia
     Hay que transformar la entrada (cadenas de caracteres) en valores numéricos
     para que puedan ser procesados posteriormente.
+    Solución utilizando una definición de audiencias por compresión
     '''
     with open(fichero, encoding='utf-8') as f:
         # Se crea un objeto lector (un iterator) que separará los valores por comas 
         lector = csv.reader(f)
         # Lista por comprensión sobre el objeto lector
-        audiencias = [(int(edicion), float(share)) for edicion, share in lector]
+        audiencias = [Audiencia(int(edicion), float(share)) for edicion, share in lector]
     return audiencias
 ```
 
@@ -157,7 +157,7 @@ En este bloque queremos responder a tres preguntas distintas:
 2. ¿Qué audiencias han tenido todas las emisiones del programa de una edición concreta?
 3. ¿Cuál es la media de _share_ en cada una de las ediciones?
 
-Para responder a la primera pregunta, vamos a diseñar e implementar una función <code>calcula_ediciones</code>, que recibe como entrada la lista de tuplas, y devuelve un entero que representa el número de ediciones del programa. Las siguientes celdas contienen la implementación y el test, respectivamente, de esta función:
+Para responder a la primera pregunta, vamos a diseñar e implementar una función <code>calcula_ediciones</code>, que recibe como entrada la lista de tuplas de tipo _Audiencia_, y devuelve un entero que representa el número de ediciones del programa. Las siguientes celdas contienen la implementación y el test, respectivamente, de esta función:
 
 
 ```python
@@ -166,13 +166,14 @@ def calcula_ediciones(audiencias):
     
     ENTRADA: 
        @param audiencias: lista de tuplas de audiencias
-       @type audiencias: [(int, float)]
+       @type audiencias: [Audiencia(int, float)]
     SALIDA: 
        @return: El número de ediciones del programa
        @rtype: int 
 
     Toma como entrada una lista de tuplas (edición, share) y produce como
     salida el número de ediciones del programa
+    Solución utilizando una definición de audiencias por compresión
     '''
     # Calculamos el conjunto de ediciones presentes
     ediciones = {e for e, _ in audiencias}
@@ -194,7 +195,7 @@ print("Número de ediciones del programa MasterChef:", ediciones_masterchef)
     Número de ediciones del programa MasterChef: 10
     
 
-Para responder a la segunda pregunta, vamos a diseñar e implementar una función que será _de filtrado_. Este tipo de funciones recuperan un subconjunto de los datos de entrada que cumplen una determinada condición. En concreto, implementaremos la función <code>filtra_por_ediciones</code>, que recupera solo aquellos registros de audiencia en los que la edición es una de las que se reciben como parámetro. Las siguientes celdas contienen la implementación y el test, respectivamente, de esta función:
+Para responder a la segunda pregunta, vamos a diseñar e implementar una función que será _de filtrado_. Este tipo de funciones recuperan un subconjunto de los datos de entrada que cumplen una determinada condición. En concreto, implementaremos la función <code>filtra_por_ediciones</code>, que recupera solo aquellos registros de audiencias en los que la edición es una de las que se reciben como parámetro. Las siguientes celdas contienen la implementación y el test, respectivamente, de esta función:
 
 
 ```python
@@ -203,19 +204,22 @@ def filtra_por_ediciones(audiencias, ediciones):
     
     ENTRADA: 
        @param audiencias: lista de audiencias 
-       @type audiencias: [(int, float)]
+       @type audiencias: [Audiencia(int, float)]
        @param ediciones: lista de ediciones a seleccionar 
        @type ediciones: [int]
     SALIDA:
        @return: lista de tuplas de audiencias seleccionadas
-       @rtype:  [(int, float)]
+       @rtype:  [Audiencia(int, float)]
 
     Toma como entrada una lista de tuplas (edición, share) y un conjunto de 
     ediciones. Produce como salida otra lista de tuplas en la que solo se
     incluyen aquellas cuya edición sea una de las que se reciben como parámetro.
     '''
-    filtradas = [(e, s) for e, s in audiencias if e in ediciones]
+    filtradas = [Audiencia(edicion, share) \
+                  for edicion, share in audiencias \
+                      if edicion in ediciones]
     return filtradas
+
 ```
 
 
@@ -231,13 +235,13 @@ print(audiencias_masterchef_45)
 ```
 
     Audiencias de las tres primeras ediciones del programa Gran Hermano:
-    [(1, 0.37), (1, 0.33), (1, 0.47), (1, 0.46), (1, 0.54), (1, 0.43), (1, 0.59), (1, 0.58), (1, 0.57), (1, 0.49), (1, 0.48), (1, 0.54), (1, 0.55), (1, 0.52), (1, 0.56), (1, 0.71), (2, 0.36), (2, 0.32), (2, 0.37), (2, 0.41), (2, 0.42), (2, 0.4), (2, 0.4), (2, 0.42), (2, 0.42), (2, 0.36), (2, 0.31), (2, 0.47), (2, 0.5), (2, 0.46), (2, 0.49), (2, 0.46), (2, 0.61), (3, 0.39), (3, 0.27), (3, 0.29), (3, 0.31), (3, 0.32), (3, 0.33), (3, 0.36), (3, 0.33), (3, 0.36), (3, 0.31), (3, 0.33), (3, 0.3), (3, 0.35), (3, 0.34), (3, 0.37), (3, 0.39), (3, 0.45)]
+    [Audiencia(1, 0.37), Audiencia(1, 0.33), Audiencia(1, 0.47), Audiencia(1, 0.46), Audiencia(1, 0.54), Audiencia(1, 0.43), Audiencia(1, 0.59), Audiencia(1, 0.58), Audiencia(1, 0.57), Audiencia(1, 0.49), Audiencia(1, 0.48), Audiencia(1, 0.54), Audiencia(1, 0.55), Audiencia(1, 0.52), Audiencia(1, 0.56), Audiencia(1, 0.71), Audiencia(2, 0.36), Audiencia(2, 0.32), Audiencia(2, 0.37), Audiencia(2, 0.41), Audiencia(2, 0.42), Audiencia(2, 0.4), Audiencia(2, 0.4), Audiencia(2, 0.42), Audiencia(2, 0.42), Audiencia(2, 0.36), Audiencia(2, 0.31), Audiencia(2, 0.47), Audiencia(2, 0.5), Audiencia(2, 0.46), Audiencia(2, 0.49), Audiencia(2, 0.46), Audiencia(2, 0.61), Audiencia(3, 0.39), Audiencia(3, 0.27), Audiencia(3, 0.29), Audiencia(3, 0.31), Audiencia(3, 0.32), Audiencia(3, 0.33), Audiencia(3, 0.36), Audiencia(3, 0.33), Audiencia(3, 0.36), Audiencia(3, 0.31), Audiencia(3, 0.33), Audiencia(3, 0.3), Audiencia(3, 0.35), Audiencia(3, 0.34), Audiencia(3, 0.37), Audiencia(3, 0.39), Audiencia(3, 0.45)]
     
     Audiencias de las ediciones 5 y 6 del programa MasterChef:
-    [(4, 0.155), (4, 0.169), (4, 0.167), (4, 0.178), (4, 0.184), (4, 0.2), (4, 0.188), (4, 0.196), (4, 0.18), (4, 0.22), (4, 0.224), (4, 0.221), (4, 0.284), (5, 0.167), (5, 0.123), (5, 0.163), (5, 0.158), (5, 0.161), (5, 0.18), (5, 0.15), (5, 0.178), (5, 0.16), (5, 0.197), (5, 0.172), (5, 0.206), (5, 0.261)]
+    [Audiencia(4, 0.155), Audiencia(4, 0.169), Audiencia(4, 0.167), Audiencia(4, 0.178), Audiencia(4, 0.184), Audiencia(4, 0.2), Audiencia(4, 0.188), Audiencia(4, 0.196), Audiencia(4, 0.18), Audiencia(4, 0.22), Audiencia(4, 0.224), Audiencia(4, 0.221), Audiencia(4, 0.284), Audiencia(5, 0.167), Audiencia(5, 0.123), Audiencia(5, 0.163), Audiencia(5, 0.158), Audiencia(5, 0.161), Audiencia(5, 0.18), Audiencia(5, 0.15), Audiencia(5, 0.178), Audiencia(5, 0.16), Audiencia(5, 0.197), Audiencia(5, 0.172), Audiencia(5, 0.206), Audiencia(5, 0.261)]
     
 
-Para responder a la tercera pregunta, vamos a implementar una función _de transformación_. Con este tipo de funciones construiremos nuevas estructuras de datos a partir de los datos de entrada, que nos darán otras perspectivas de los mismos (aplicando, por ejemplo, algún tipo de función de resumen o agregación). Así, implementaremos la función <code>medias_por_ediciones</code>, que tomará como entrada una lista de tuplas (edición, _share_) y devolverá un diccionario en el que las claves son ediciones y los valores son las medias de _share_ de cada edición.
+Para responder a la tercera pregunta, vamos a implementar una función _de transformación_. Con este tipo de funciones construiremos nuevas estructuras de datos a partir de los datos de entrada, que nos darán otras perspectivas de los mismos (aplicando, por ejemplo, algún tipo de función de resumen o agregación). Así, implementaremos la función <code>medias_por_ediciones</code>, que tomará como entrada una lista de tuplas de tipo _Audiencia_ y devolverá un diccionario en el que las claves son ediciones y los valores son las medias de _share_ de cada edición.
 
 En algunos casos, la operación a realizar puede ser compleja, y conviene usar funciones auxiliares que ayuden a modularizar y estructurar mejor el código. Así que para implementar <code>medias_por_ediciones</code>, vamos a definir una función auxiliar que se encargue de agrupar los datos por ediciones, para luego poder calcular la media. Esta función auxiliar se llama <code>agrupa_por_ediciones</code> y se encarga de obtener un diccionario en el que las claves sean las ediciones, y los valores sean listas de números reales con los datos de _share_ de los programas de esa edición.
 
@@ -246,6 +250,14 @@ Las siguientes celdas contienen la implementación y el test, respectivamente, d
 
 ```python
 def agrupa_por_ediciones(audiencias):
+    '''Función auxiliar
+    ENTRADA:
+    @param audiencias: lista de tuplas (edicion, share) con las audiencias de un programa de televisión
+    @type audiencias: [Audiencia(int, float)]
+    SALIDA:
+    @return: Un diccionario en el que las claves son las ediciones y los valores la lista de shares de esa edición
+    @rtype: {int:[float]}
+    '''
     res = dict() # Crea diccionario vacío
     # Vamos recorriendo las audiencias
     for edicion, share in audiencias:
@@ -280,7 +292,7 @@ def medias_por_ediciones(audiencias):
     
     ENTRADA: 
        @param audiencias: lista de audiencias 
-       @type audiencias: [(int, float)]
+       @type audiencias: [Audiencia(int, float)]
     SALIDA:
        @return: medias de audiencia por cada edición
        @rtype: {int: float}
@@ -326,21 +338,21 @@ En este último bloque, vamos a responder a preguntas concretas proporcionando r
 
 En Python, el paquete más usado para generar gráficas es <code>matplotlib</code>. Es un paquete muy completo y complejo, y su manejo se escapa un poco del alcance de un curso de introducción a la programación. Por esta razón, siempre que lo usemos, en el enunciado de los ejercicios se indicarán exactamente las instrucciones _matplotlib_ necesarias para generar las gráficas, quedando solo como trabajo del ejercicio la construcción de las estructuras de datos que requieren estas instrucciones (casi siempre, estas estructuras serán listas).
 
-Para responder a la cuarta pregunta, implementaremos la función de visualización <code>muestra_evolucion_audiencias</code>. Esta función toma como entrada una lista de tuplas (edición, _share_) y genera una gráfica con la evolución de los _shares_ a lo largo del tiempo.
+Para responder a la cuarta pregunta, implementaremos la función de visualización <code>muestra_evolucion_audiencias</code>. Esta función toma como entrada una lista de tuplas de tipo _Audiencia_ y genera una gráfica con la evolución de los _shares_ a lo largo del tiempo.
 
 Las siguientes celdas contienen la implementación y el test, respectivamente, de esta función. 
 
 
 ```python
-def muestra_evolucion_audiencias(audiencias, nombre_programa):
     ''' Genera una curva con la evolución de las audiencias
     
     ENTRADA: 
        @param audiencias: lista de audiencias
-       @type audiencias: [(int, float)]
+       @type audiencias: [Audiencia(int, float)]
        @param nombre_programa: Nombre del programa
        @type nombre_programa: str
-    SALIDA EN PANTALLA:
+
+    SALIDA EN CONSOLA:
        - gráfica con la evolución de los shares a lo largo del tiempo
 
     Toma como entrada una lista de tuplas (edición, share) y muestra una
@@ -368,9 +380,9 @@ def muestra_evolucion_audiencias(audiencias, nombre_programa):
 
 ```python
 # Test de la función muestra_evolucion_audiencias
-muestra_evolucion_audiencias(audiencias_gh, "Gran Hermano")
+muestra_evolucion_Audiencia(audiencias_gh, "Gran Hermano")
 
-muestra_evolucion_audiencias(audiencias_masterchef, "Master Chef")
+muestra_evolucion_Audiencia(audiencias_masterchef, "Master Chef")
 ```
 
 
@@ -381,7 +393,7 @@ muestra_evolucion_audiencias(audiencias_masterchef, "Master Chef")
 ![png](img/output_24_1.png)
 
 
-Para responder a la última pregunta implementaremos la función <code>muestra_medias_por_ediciones</code>. Esta función, que también toma como entrada una lista de tuplas (edición, _share_), se apoyará en la función <code>medias_por_ediciones</code> para calcular un diccionario con las medias de _share_ de cada edición. Los valores de este diccionario se mostrarán en un diagrama de barras en el que en el eje _X_ se representarán las ediciones, y la media de los _shares_ se corresponderá con la altura de las barras.
+Para responder a la última pregunta implementaremos la función <code>muestra_medias_por_ediciones</code>. Esta función, que también toma como entrada una lista de tuplas de tipo _Audiencia_, se apoyará en la función <code>medias_por_ediciones</code> para calcular un diccionario con las medias de _share_ de cada edición. Los valores de este diccionario se mostrarán en un diagrama de barras en el que en el eje _X_ se representarán las ediciones, y la media de los _shares_ se corresponderá con la altura de las barras.
 
 Las siguientes celdas contienen la implementación y el test, respectivamente, de esta función.
 
@@ -392,8 +404,8 @@ def muestra_medias_por_ediciones(audiencias):
     
     ENTRADA: 
        @param audiencias: lista de audiencias
-       @type audiencias: [(int, float)]
-    SALIDA EN PANTALLA:
+       @type audiencias: [Audiencia(int, float)]
+    SALIDA EN CONSOLA:
        - gráfica con las medias por cada edición
 
     Toma como entrada una lista de tuplas (edición, share) y muestra un diagrama
@@ -418,6 +430,7 @@ def muestra_medias_por_ediciones(audiencias):
     plt.title(f"Medias de shares por edición del programa {nombre_programa}")
     plt.xlabel("ediciones")
     plt.ylabel("medias")
+
     plt.bar(ediciones, lista_medias)
     plt.xticks(ediciones, ediciones, fontsize=8)
     plt.show()
@@ -443,7 +456,7 @@ muestra_medias_por_ediciones(audiencias_masterchef)
 
 Cerramos este notebook con un par de ejercicios sin implementar. Se trata de dos funciones que calculan _informaciones derivadas_ a partir de los datos de entrada. Son dos funciones simples de pocas LDCs (Líneas De Código) cada una, con tratamientos muy comunes sobre secuencias de datos numéricos. Con una búsqueda simple en _stackoverflow_ se pueden encontrar fragmentos de código que, con pocos cambios, pueden ayudarnos a obtener la solución.
 
-La primera de las funciones se llama <code>calcula_estadisticos</code>. Toma como entrada una lista de tuplas (edición, _share_) y calcula diversos estadísticos de la serie de _shares_ (media, mediana, máximo y mínimo). Para nuestros datos de entrada, por ejemplo, podríamos obtener una salida como esta:
+La primera de las funciones se llama <code>calcula_estadisticos</code>. Toma como entrada una lista de tuplas de tipo _Audiencia_ y calcula diversos estadísticos de la serie de _shares_ (media, mediana, máximo y mínimo). Para nuestros datos de entrada, por ejemplo, podríamos obtener una salida como esta:
 
 <pre>
         Media:   0.265
@@ -477,7 +490,7 @@ def calcula_estadisticos(audiencias):
     
     ENTRADA: 
        @param audiencias: lista de audiencias
-       @type audiencias: [(int, float)]
+       @type audiencias: [Audiencia(int, float)]
     SALIDA:
        @return: media, mediana, máximo y mínimo
        @rtype: (float, float, float, float)
@@ -522,7 +535,7 @@ print('Mínimo:', minimo_mc)
     Mínimo: 0.1
     
 
-La segunda función se llama <code>lista_medias_shares</code>. Toma como entrada una lista de tuplas (edición, _share_) y produce como salida una lista de tuplas (_media-shares_, edición) ordenada de mayor a menor por la media de _shares_. Esta función hace uso de la función <code>medias_por_ediciones</code> para calcular la media de _share_ de cada edición. Para nuestros datos de entrada, por ejemplo, podríamos obtener una salida como esta:
+La segunda función se llama <code>lista_medias_shares</code>. Toma como entrada una lista de tuplas de tipo _Audiencia_ y produce como salida una lista de tuplas S(_media-shares_, edición) ordenada de mayor a menor por la media de _shares_. Esta función hace uso de la función <code>medias_por_ediciones</code> para calcular la media de _share_ de cada edición. Para nuestros datos de entrada, por ejemplo, podríamos obtener una salida como esta:
 
 <pre>
         1 ->  0.512
@@ -554,7 +567,7 @@ def lista_medias_shares(audiencias):
     
     ENTRADA: 
        @param audiencias: lista de audiencias 
-       @type audiencias: [(int, float)]
+       @type audiencias: [Audiencia(int, float)]
     SALIDA:
        @return: pares (medias de audiencia, edición) ordenados de mayor a menor media
        @rtype: [(float, int)]
